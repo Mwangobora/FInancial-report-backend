@@ -1,4 +1,6 @@
 // src/app.js
+require('dotenv').config(); // Make sure to load .env first
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -18,12 +20,27 @@ const statementRoutes = require('./routes/statements');
 
 const app = express();
 
-// Security middleware
-app.use(helmet());
+// Allowed origins (support both dev ports)
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000'
+];
+
+// CORS middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn(`❌ CORS Blocked Origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
+
+// Security middleware
+app.use(helmet());
 
 // Rate limiting
 app.use(rateLimiter);
@@ -55,9 +72,9 @@ app.use(API_BASE, accountRoutes);
 app.use(API_BASE, transactionRoutes);
 app.use(API_BASE, statementRoutes);
 
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({ 
+// 404 handler - catch all unmatched routes
+app.use((req, res) => {
+  res.status(404).json({
     error: 'Endpoint not found',
     path: req.originalUrl,
     method: req.method
