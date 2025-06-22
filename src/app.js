@@ -20,10 +20,11 @@ const statementRoutes = require('./routes/statements');
 
 const app = express();
 
-// Allowed origins (support both dev ports)
+// Allowed origins (support both dev ports and production)
 const allowedOrigins = [
   'http://localhost:5173',
-  'http://localhost:3000'
+  'http://localhost:3000',
+  'https://finacial-report-git-main-mwangoboras-projects.vercel.app'
 ];
 
 // CORS middleware
