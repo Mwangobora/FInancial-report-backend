@@ -24,7 +24,8 @@ const app = express();
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
-  'https://graceful-truffle-c4985f.netlify.app'
+  'https://finacial-app.vercel.app',
+  'https://f55984pk-5173.uks1.devtunnels.ms/'
 ];
 
 // CORS middleware
