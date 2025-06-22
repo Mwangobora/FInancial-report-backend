@@ -24,7 +24,7 @@ const app = express();
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
-  'https://finacial-app-eta.vercel.app',
+  'https://finacial-report-site.vercel.app',
   'https://f55984pk-5173.uks1.devtunnels.ms/'
 ];
 
