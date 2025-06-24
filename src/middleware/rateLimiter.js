@@ -1,13 +1,13 @@
 const rateLimit = require("express-rate-limit")
 
-// Basic rate limiter for all requests
+// Basic rate limiter for all requests - Very permissive for development
 const basicLimiter = rateLimit({
-  windowMs: Number.parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
-  max: Number.parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // limit each IP to 100 requests per windowMs
+  windowMs: Number.parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 60 * 1000, // 1 minute
+  max: Number.parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 10000, // limit each IP to 10000 requests per windowMs
   message: {
     error: "Too many requests",
     message: "Too many requests from this IP, please try again later.",
-    retryAfter: Math.ceil((Number.parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000) / 1000),
+    retryAfter: Math.ceil((Number.parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 60 * 1000) / 1000),
   },
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
@@ -15,20 +15,20 @@ const basicLimiter = rateLimit({
     res.status(429).json({
       error: "Too many requests",
       message: "Too many requests from this IP, please try again later.",
-      retryAfter: Math.ceil((Number.parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000) / 1000),
+      retryAfter: Math.ceil((Number.parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 60 * 1000) / 1000),
       timestamp: new Date().toISOString(),
     })
   },
 })
 
-// Strict rate limiter for authentication endpoints
+// More permissive rate limiter for authentication endpoints
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit each IP to 5 requests per windowMs for auth endpoints
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 100, // limit each IP to 100 requests per windowMs for auth endpoints
   message: {
     error: "Too many authentication attempts",
     message: "Too many authentication attempts from this IP, please try again later.",
-    retryAfter: 15 * 60, // 15 minutes in seconds
+    retryAfter: 5 * 60, // 5 minutes in seconds
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -38,20 +38,20 @@ const authLimiter = rateLimit({
     res.status(429).json({
       error: "Too many authentication attempts",
       message: "Too many authentication attempts from this IP, please try again later.",
-      retryAfter: 15 * 60,
+      retryAfter: 5 * 60,
       timestamp: new Date().toISOString(),
     })
   },
 })
 
-// Moderate rate limiter for data creation endpoints
+// Very permissive rate limiter for data creation endpoints
 const createLimiter = rateLimit({
-  windowMs: 10 * 60 * 1000, // 10 minutes
-  max: 20, // limit each IP to 20 create requests per windowMs
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 1000, // limit each IP to 1000 create requests per windowMs
   message: {
     error: "Too many creation requests",
     message: "Too many creation requests from this IP, please try again later.",
-    retryAfter: 10 * 60, // 10 minutes in seconds
+    retryAfter: 1 * 60, // 1 minute in seconds
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -60,20 +60,20 @@ const createLimiter = rateLimit({
     res.status(429).json({
       error: "Too many creation requests",
       message: "Too many creation requests from this IP, please try again later.",
-      retryAfter: 10 * 60,
+      retryAfter: 1 * 60,
       timestamp: new Date().toISOString(),
     })
   },
 })
 
-// Lenient rate limiter for read-only endpoints
+// Very lenient rate limiter for read-only endpoints
 const readLimiter = rateLimit({
-  windowMs: 5 * 60 * 1000, // 5 minutes
-  max: 200, // limit each IP to 200 read requests per windowMs
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 5000, // limit each IP to 5000 read requests per windowMs
   message: {
     error: "Too many read requests",
     message: "Too many read requests from this IP, please try again later.",
-    retryAfter: 5 * 60, // 5 minutes in seconds
+    retryAfter: 1 * 60, // 1 minute in seconds
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -81,7 +81,7 @@ const readLimiter = rateLimit({
     res.status(429).json({
       error: "Too many read requests",
       message: "Too many read requests from this IP, please try again later.",
-      retryAfter: 5 * 60,
+      retryAfter: 1 * 60,
       timestamp: new Date().toISOString(),
     })
   },
@@ -165,9 +165,12 @@ const skipRateLimit = (req, res) => {
     return true
   }
 
-  // Skip rate limiting for localhost in development
-  if (process.env.NODE_ENV === "development" && req.ip === "127.0.0.1") {
-    return true
+  // Skip rate limiting for localhost and common development IPs
+  if (process.env.NODE_ENV === "development") {
+    const devIPs = ["127.0.0.1", "::1", "localhost", "::ffff:127.0.0.1"]
+    if (devIPs.includes(req.ip) || req.ip?.startsWith("192.168.") || req.ip?.startsWith("10.")) {
+      return true
+    }
   }
 
   // Skip rate limiting for whitelisted IPs (if configured)
